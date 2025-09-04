@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:cosmosdb="http://www.mulesoft.org/schema/mule/cosmosdb"
+      xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+      xmlns:json="http://www.mulesoft.org/schema/mule/json"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+      http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+      http://www.mulesoft.org/schema/mule/cosmosdb http://www.mulesoft.org/schema/mule/cosmosdb/current/mule-cosmosdb.xsd
+      http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+      http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+
+    <!-- Configuration Properties -->
+    <configuration-properties file="config/config.yaml" doc:name="Configuration properties" />
+
+    <!-- HTTP Listener Configuration -->
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+
+    <!-- Cosmos DB Configuration -->
+    <cosmosdb:config name="CosmosDB_Config" doc:name="Cosmos DB Config">
+        <cosmosdb:connection 
+            endpoint="${cosmosdb.endpoint}" 
+            accessKey="${cosmosdb.accessKey}" 
+            databaseName="${cosmosdb.databaseName}" />
+    </cosmosdb:config>
+
+    <!-- Global Error Handler -->
+    <error-handler name="global-error-handler">
+        <on-error-propagate type="VALIDATION:INVALID_INPUT" doc:name="On Error Propagate">
+            <set-payload value='#[{
+                "error": "Validation Error",
+                "message": error.description,
+                "timestamp": now()
+            }]' />
+            <set-variable variableName="httpStatus" value="400" />
+        </on-error-propagate>
+        <on-error-propagate type="COSMOSDB:NOT_FOUND" doc:name="On Error Propagate">
+            <set-payload value='#[{
+                "error": "Not Found",
+                "message": "Member not found",
+                "timestamp": now()
+            }]' />
+            <set-variable variableName="httpStatus" value="404" />
+        </on-error-propagate>
+        <on-error-propagate type="COSMOSDB:CONFLICT" doc:name="On Error Propagate">
+            <set-payload value='#[{
+                "error": "Conflict",
+                "message": "Member already exists",
+                "timestamp": now()
+            }]' />
+            <set-variable variableName="httpStatus" value="409" />
+        </on-error-propagate>
+        <on-error-propagate type="ANY" doc:name="On Error Propagate">
+            <set-payload value='#[{
+                "error": "Internal Server Error",
+                "message": "An unexpected error occurred",
+                "timestamp": now()
+            }]' />
+            <set-variable variableName="httpStatus" value="500" />
+        </on-error-propagate>
+    </error-handler>
+
+    <!-- Flow for Creating Member -->
+    <flow name="create-member-flow" doc:name="create-member-flow">
+        <http:listener doc:name="Listener" config-ref="HTTP_Listener_config" path="/members" allowedMethods="POST"/>
+        <error-handler ref="global-error-handler" />
+        
+        <!-- Validate input -->
+        <validation:is-not-null value="#[payload]" doc:name="Is Not Null" />
+        <validation:is-not-empty value="#[payload.memberId]" doc:name="Is Not Empty" />
+        <validation:is-not-empty value="#[payload.firstName]" doc:name="Is Not Empty" />
+        <validation:is-not-empty value="#[payload.lastName]" doc:name="Is Not Empty" />
+        <validation:is-not-empty value="#[payload.email]" doc:name="Is Not Empty" />
+        
+        <!-- Add timestamp and ID -->
+        <set-payload value='#[{
+            "id": payload.memberId,
+            "memberId": payload.memberId,
+            "firstName": payload.firstName,
+            "lastName": payload.lastName,
+            "email": payload.email,
+            "phone": payload.phone default "",
+            "address": payload.address default {},
+            "createdAt": now(),
+            "updatedAt": now()
+        }]' doc:name="Set Payload" />
+        
+        <!-- Insert into Cosmos DB -->
+        <cosmosdb:create-document config-ref="CosmosDB_Config" 
+            collectionName="${cosmosdb.collectionName}" 
+            doc:name="Create Document" />
+        
+        <!-- Set success response -->
+        <set-payload value='#[{
+            "success": true,
+            "message": "Member created successfully",
+            "memberId": payload.memberId,
+            "timestamp": now()
+        }]' doc:name="Set Success Response" />
+        
+        <set-variable variableName="httpStatus" value="201" doc:name="Set HTTP Status" />
+    </flow>
+
+    <!-- Flow for Getting Member by ID -->
+    <flow name="get-member-flow" doc:name="get-member-flow">
+        <http:listener doc:name="Listener" config-ref="HTTP_Listener_config" path="/members/{memberId}" allowedMethods="GET"/>
+        <error-handler ref="global-error-handler" />
+        
+        <!-- Extract member ID from path -->
+        <set-variable variableName="memberId" value="#[attributes.uriParams.memberId]" doc:name="Set Member ID" />
+        
+        <!-- Validate member ID -->
+        <validation:is-not-empty value="#[vars.memberId]" doc:name="Is Not Empty" />
+        
+        <!-- Query Cosmos DB -->
+        <cosmosdb:query-documents config-ref="CosmosDB_Config" 
+            collectionName="${cosmosdb.collectionName}" 
+            query="SELECT * FROM c WHERE c.memberId = @memberId"
+            doc:name="Query Documents">
+            <cosmosdb:query-parameters>
+                <cosmosdb:query-parameter key="memberId" value="#[vars.memberId]" />
+            </cosmosdb:query-parameters>
+        </cosmosdb:query-documents>
+        
+        <!-- Check if member exists -->
+        <choice doc:name="Choice">
+            <when expression="#[sizeOf(payload) > 0]">
+                <set-payload value="#[payload[0]]" doc:name="Set Payload" />
+                <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status" />
+            </when>
+            <otherwise>
+                <set-payload value='#[{
+                    "error": "Not Found",
+                    "message": "Member with ID " ++ vars.memberId ++ " not found",
+                    "timestamp": now()
+                }]' doc:name="Set Not Found Response" />
+                <set-variable variableName="httpStatus" value="404" doc:name="Set HTTP Status" />
+            </otherwise>
+        </choice>
+    </flow>
+
+    <!-- Flow for Updating Member -->
+    <flow name="update-member-flow" doc:name="update-member-flow">
+        <http:listener doc:name="Listener" config-ref="HTTP_Listener_config" path="/members/{memberId}" allowedMethods="PUT"/>
+        <error-handler ref="global-error-handler" />
+        
+        <!-- Extract member ID from path -->
+        <set-variable variableName="memberId" value="#[attributes.uriParams.memberId]" doc:name="Set Member ID" />
+        
+        <!-- Validate input -->
+        <validation:is-not-null value="#[payload]" doc:name="Is Not Null" />
+        <validation:is-not-empty value="#[vars.memberId]" doc:name="Is Not Empty" />
+        
+        <!-- First check if member exists -->
+        <cosmosdb:query-documents config-ref="CosmosDB_Config" 
+            collectionName="${cosmosdb.collectionName}" 
+            query="SELECT * FROM c WHERE c.memberId = @memberId"
+            doc:name="Query Documents">
+            <cosmosdb:query-parameters>
+                <cosmosdb:query-parameter key="memberId" value="#[vars.memberId]" />
+            </cosmosdb:query-parameters>
+        </cosmosdb:query-documents>
+        
+        <choice doc:name="Choice">
+            <when expression="#[sizeOf(payload) > 0]">
+                <!-- Member exists, update it -->
+                <set-payload value='#[{
+                    "id": payload[0].id,
+                    "memberId": vars.memberId,
+                    "firstName": payload.firstName default payload[0].firstName,
+                    "lastName": payload.lastName default payload[0].lastName,
+                    "email": payload.email default payload[0].email,
+                    "phone": payload.phone default payload[0].phone,
+                    "address": payload.address default payload[0].address,
+                    "createdAt": payload[0].createdAt,
+                    "updatedAt": now()
+                }]' doc:name="Set Update Payload" />
+                
+                <cosmosdb:upsert-document config-ref="CosmosDB_Config" 
+                    collectionName="${cosmosdb.collectionName}" 
+                    doc:name="Upsert Document" />
+                
+                <set-payload value='#[{
+                    "success": true,
+                    "message": "Member updated successfully",
+                    "memberId": vars.memberId,
+                    "timestamp": now()
+                }]' doc:name="Set Success Response" />
+                
+                <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status" />
+            </when>
+            <otherwise>
+                <set-payload value='#[{
+                    "error": "Not Found",
+                    "message": "Member with ID " ++ vars.memberId ++ " not found",
+                    "timestamp": now()
+                }]' doc:name="Set Not Found Response" />
+                <set-variable variableName="httpStatus" value="404" doc:name="Set HTTP Status" />
+            </otherwise>
+        </choice>
+    </flow>
+
+    <!-- Flow for Deleting Member -->
+    <flow name="delete-member-flow" doc:name="delete-member-flow">
+        <http:listener doc:name="Listener" config-ref="HTTP_Listener_config" path="/members/{memberId}" allowedMethods="DELETE"/>
+        <error-handler ref="global-error-handler" />
+        
+        <!-- Extract member ID from path -->
+        <set-variable variableName="memberId" value="#[attributes.uriParams.memberId]" doc:name="Set Member ID" />
+        
+        <!-- Validate member ID -->
+        <validation:is-not-empty value="#[vars.memberId]" doc:name="Is Not Empty" />
+        
+        <!-- First check if member exists -->
+        <cosmosdb:query-documents config-ref="CosmosDB_Config" 
+            collectionName="${cosmosdb.collectionName}" 
+            query="SELECT * FROM c WHERE c.memberId = @memberId"
+            doc:name="Query Documents">
+            <cosmosdb:query-parameters>
+                <cosmosdb:query-parameter key="memberId" value="#[vars.memberId]" />
+            </cosmosdb:query-parameters>
+        </cosmosdb:query-documents>
+        
+        <choice doc:name="Choice">
+            <when expression="#[sizeOf(payload) > 0]">
+                <!-- Member exists, delete it -->
+                <cosmosdb:delete-document config-ref="CosmosDB_Config" 
+                    collectionName="${cosmosdb.collectionName}" 
+                    documentId="#[payload[0].id]"
+                    doc:name="Delete Document" />
+                
+                <set-payload value='#[{
+                    "success": true,
+                    "message": "Member deleted successfully",
+                    "memberId": vars.memberId,
+                    "timestamp": now()
+                }]' doc:name="Set Success Response" />
+                
+                <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status" />
+            </when>
+            <otherwise>
+                <set-payload value='#[{
+                    "error": "Not Found",
+                    "message": "Member with ID " ++ vars.memberId ++ " not found",
+                    "timestamp": now()
+                }]' doc:name="Set Not Found Response" />
+                <set-variable variableName="httpStatus" value="404" doc:name="Set HTTP Status" />
+            </otherwise>
+        </choice>
+    </flow>
+
+    <!-- Health Check Flow -->
+    <flow name="health-check-flow" doc:name="health-check-flow">
+        <http:listener doc:name="Listener" config-ref="HTTP_Listener_config" path="/health" allowedMethods="GET"/>
+        <set-payload value='#[{
+            "status": "UP",
+            "service": "Cosmos Member Service",
+            "timestamp": now()
+        }]' doc:name="Set Health Response" />
+        <set-variable variableName="httpStatus" value="200" doc:name="Set HTTP Status" />
+    </flow>
+
+    <!-- Response Handler -->
+    <flow name="response-handler-flow" doc:name="response-handler-flow">
+        <logger level="INFO" doc:name="Logger" message="Response: #[payload]" />
+        <set-property propertyName="Content-Type" value="application/json" doc:name="Set Content Type" />
+        <set-variable variableName="httpStatus" value="#[vars.httpStatus default 200]" doc:name="Set HTTP Status" />
+    </flow>
+
+</mule>

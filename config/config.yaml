@@ -1,0 +1,12 @@
+# Cosmos DB Configuration
+cosmosdb:
+  endpoint: "https://your-cosmosdb-account.documents.azure.com:443/"
+  accessKey: "your-cosmosdb-access-key"
+  databaseName: "member-database"
+  collectionName: "members"
+
+# Application Configuration
+app:
+  name: "Cosmos Member Service"
+  version: "1.0.0"
+  port: 8081
