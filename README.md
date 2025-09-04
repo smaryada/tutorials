@@ -1,42 +1,118 @@
+# Cosmos Member Service
 
-The "REST with Spring" Classes
-==============================
+A MuleSoft application for managing member details in Azure Cosmos DB.
 
-After 5 months of work, here's the Master Class of REST With Spring: <br/>
-**[>> THE REST WITH SPRING MASTER CLASS](http://www.baeldung.com/rest-with-spring-course?utm_source=github&utm_medium=social&utm_content=tutorials&utm_campaign=rws#master-class)**
+## Features
 
-And here's the Master Class of Learn Spring Security: <br/>
-**[>> LEARN SPRING SECURITY MASTER CLASS](http://www.baeldung.com/learn-spring-security-course?utm_source=github&utm_medium=social&utm_content=tutorials&utm_campaign=lss#master-class)**
+- **Create Member**: Insert new member details into Cosmos DB
+- **Get Member**: Retrieve member details by member ID
+- **Update Member**: Update existing member information
+- **Delete Member**: Remove member from the database
+- **Health Check**: Service health monitoring endpoint
 
+## Prerequisites
 
+- MuleSoft Anypoint Studio 7.x or later
+- Java 8 or later
+- Maven 3.6 or later
+- Azure Cosmos DB account
 
-Spring Tutorials
-================
+## Setup Instructions
 
-This project is **a collection of small and focused tutorials** each covering a single and well defined area of development. 
-Most of the tutorial projects are focused on the `Spring Framework` (and `Spring Security`).  
-In additional to Spring, the following technologies are in focus: `core Java`, `Jackson`, `HttpClient`, `Guava`. 
+### 1. Configure Cosmos DB
 
-Building the project
-====================
-To do the full build, do: `mvn install -Pdefault -Dgib.enabled=false`
+1. Create an Azure Cosmos DB account
+2. Create a database named `member-database`
+3. Create a container named `members` with partition key `/memberId`
+4. Update `config/config.yaml` with your Cosmos DB credentials:
 
+```yaml
+cosmosdb:
+  endpoint: "https://your-cosmosdb-account.documents.azure.com:443/"
+  accessKey: "your-cosmosdb-access-key"
+  databaseName: "member-database"
+  collectionName: "members"
+```
 
-Working with the code in Eclipse
-================================
-Any IDE can be used to work with the projects, but if you're using Eclipse, consider the following. 
+### 2. Build and Run
 
-- import the included **formatter** in Eclipse: 
-`https://github.com/eugenp/tutorials/tree/master/eclipse`
+```bash
+# Build the application
+mvn clean package
 
+# Run the application
+mvn mule:run
+```
 
-CI - Jenkins
-================================
-This tutorials project is being built **[>> HERE](https://rest-security.ci.cloudbees.com/job/tutorials-unit/)**
+The application will start on `http://localhost:8081`
 
-### Relevant Articles: 
-================================
+## API Endpoints
 
-- [Apache Maven Standard Directory Layout](http://www.baeldung.com/maven-directory-structure)
-- [Apache Maven Tutorial](http://www.baeldung.com/maven)
-- [Designing a User Friendly Java Library](http://www.baeldung.com/design-a-user-friendly-java-library)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/members` | Create a new member |
+| GET | `/members/{memberId}` | Get member by ID |
+| PUT | `/members/{memberId}` | Update member |
+| DELETE | `/members/{memberId}` | Delete member |
+| GET | `/health` | Health check |
+
+## Sample Usage
+
+### Create a Member
+```bash
+curl -X POST http://localhost:8081/members \
+  -H "Content-Type: application/json" \
+  -d '{
+    "memberId": "MEMBER001",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1-555-123-4567"
+  }'
+```
+
+### Get a Member
+```bash
+curl -X GET http://localhost:8081/members/MEMBER001
+```
+
+## Data Model
+
+```json
+{
+  "id": "cosmos-generated-id",
+  "memberId": "MEMBER001",
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1-555-123-4567",
+  "address": {
+    "street": "123 Main Street",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001",
+    "country": "USA"
+  },
+  "createdAt": "2024-01-15T10:30:00Z",
+  "updatedAt": "2024-01-15T10:30:00Z"
+}
+```
+
+## Error Handling
+
+The application includes comprehensive error handling for:
+- Validation errors (400 Bad Request)
+- Not found errors (404 Not Found)
+- Conflict errors (409 Conflict)
+- Internal server errors (500 Internal Server Error)
+
+## Dependencies
+
+- Mule HTTP Connector
+- Azure Cosmos DB Connector
+- Mule JSON Module
+- Mule Validation Module
+
+## License
+
+This project is licensed under the MIT License.

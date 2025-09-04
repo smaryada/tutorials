@@ -1,0 +1,29 @@
+{
+  "memberSample": {
+    "memberId": "MEMBER001",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1-555-123-4567",
+    "address": {
+      "street": "123 Main Street",
+      "city": "New York",
+      "state": "NY",
+      "zipCode": "10001",
+      "country": "USA"
+    }
+  },
+  "memberUpdateSample": {
+    "firstName": "John",
+    "lastName": "Smith",
+    "email": "john.smith@example.com",
+    "phone": "+1-555-987-6543",
+    "address": {
+      "street": "456 Oak Avenue",
+      "city": "Los Angeles",
+      "state": "CA",
+      "zipCode": "90210",
+      "country": "USA"
+    }
+  }
+}
