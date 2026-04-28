@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>834 EDI Enrollment Test Data Generator</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="logo">834</span>
+      <div>
+        <h1>EDI Enrollment Test Data Generator</h1>
+        <p class="subtitle">Generate ASC X12 834 (Health Insurance Enrollment) sample files for every common scenario</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-batch" class="btn btn-secondary" type="button">Generate All Scenarios</button>
+      <button id="btn-randomize" class="btn btn-ghost" type="button">Randomize</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>Scenarios</h2>
+        <input type="search" id="scenario-search" placeholder="Search scenarios..." autocomplete="off">
+      </div>
+      <nav id="scenario-list" class="scenario-list" aria-label="Scenarios"></nav>
+    </aside>
+
+    <section class="form-panel">
+      <div class="panel-header">
+        <h2 id="scenario-title">Select a scenario</h2>
+        <p id="scenario-description" class="muted"></p>
+      </div>
+      <div id="scenario-meta" class="scenario-meta"></div>
+
+      <form id="data-form" class="data-form" autocomplete="off">
+        <fieldset class="form-section">
+          <legend>Interchange (ISA / GS)</legend>
+          <div class="form-grid">
+            <label>Sender ID
+              <input type="text" name="senderId" maxlength="15" value="SENDER123">
+            </label>
+            <label>Receiver ID
+              <input type="text" name="receiverId" maxlength="15" value="RECEIVER123">
+            </label>
+            <label>Control Number
+              <input type="text" name="controlNumber" maxlength="9" value="000000001">
+            </label>
+            <label>Usage Indicator
+              <select name="usageIndicator">
+                <option value="T">T - Test</option>
+                <option value="P">P - Production</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Sponsor &amp; Payer (1000A / 1000B)</legend>
+          <div class="form-grid">
+            <label>Sponsor Name
+              <input type="text" name="sponsorName" maxlength="60" value="ACME EMPLOYER GROUP">
+            </label>
+            <label>Sponsor Tax ID (FI)
+              <input type="text" name="sponsorTaxId" maxlength="9" value="123456789">
+            </label>
+            <label>Payer Name
+              <input type="text" name="payerName" maxlength="60" value="UNITED HEALTH PLAN">
+            </label>
+            <label>Payer ID (FI)
+              <input type="text" name="payerId" maxlength="9" value="987654321">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Member (2000 / 2100A / 2100C)</legend>
+          <div class="form-grid">
+            <label>Subscriber ID (SSN/Member#)
+              <input type="text" name="subscriberId" maxlength="20" value="123456789">
+            </label>
+            <label>First Name
+              <input type="text" name="firstName" maxlength="35" value="JOHN">
+            </label>
+            <label>Last Name
+              <input type="text" name="lastName" maxlength="60" value="DOE">
+            </label>
+            <label>Middle Name
+              <input type="text" name="middleName" maxlength="25" value="A">
+            </label>
+            <label>Date of Birth
+              <input type="date" name="dateOfBirth" value="1985-03-15">
+            </label>
+            <label>Gender
+              <select name="gender">
+                <option value="M">M - Male</option>
+                <option value="F">F - Female</option>
+                <option value="U">U - Unknown</option>
+              </select>
+            </label>
+            <label>SSN
+              <input type="text" name="ssn" maxlength="9" value="123456789">
+            </label>
+            <label>Marital Status
+              <select name="maritalStatus">
+                <option value="I">I - Single</option>
+                <option value="M" selected>M - Married</option>
+                <option value="D">D - Divorced</option>
+                <option value="W">W - Widowed</option>
+                <option value="U">U - Unknown</option>
+              </select>
+            </label>
+            <label>Address Line 1
+              <input type="text" name="addressLine1" maxlength="55" value="123 MAIN STREET">
+            </label>
+            <label>Address Line 2
+              <input type="text" name="addressLine2" maxlength="55" value="">
+            </label>
+            <label>City
+              <input type="text" name="city" maxlength="30" value="ANYTOWN">
+            </label>
+            <label>State
+              <input type="text" name="state" maxlength="2" value="CA">
+            </label>
+            <label>ZIP
+              <input type="text" name="zip" maxlength="15" value="90210">
+            </label>
+            <label>Phone
+              <input type="text" name="phone" maxlength="20" value="5555551234">
+            </label>
+            <label>Email
+              <input type="email" name="email" maxlength="80" value="john.doe@example.com">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Coverage (2300)</legend>
+          <div class="form-grid">
+            <label>Plan Coverage Description
+              <input type="text" name="planDescription" maxlength="50" value="GOLD PPO PLAN">
+            </label>
+            <label>Insurance Line Code
+              <select name="insuranceLineCode">
+                <option value="HLT" selected>HLT - Health</option>
+                <option value="DEN">DEN - Dental</option>
+                <option value="VIS">VIS - Vision</option>
+                <option value="PDG">PDG - Pharmacy</option>
+                <option value="LTD">LTD - Long Term Disability</option>
+                <option value="STD">STD - Short Term Disability</option>
+                <option value="LIF">LIF - Life</option>
+              </select>
+            </label>
+            <label>Coverage Level
+              <select name="coverageLevel">
+                <option value="EMP">EMP - Employee Only</option>
+                <option value="ESP">ESP - Employee &amp; Spouse</option>
+                <option value="ECH">ECH - Employee &amp; Children</option>
+                <option value="FAM" selected>FAM - Family</option>
+                <option value="IND">IND - Individual</option>
+                <option value="TWO">TWO - Two Party</option>
+              </select>
+            </label>
+            <label>Group Policy Number
+              <input type="text" name="groupNumber" maxlength="30" value="GRP00012345">
+            </label>
+            <label>Plan Effective Date
+              <input type="date" name="effectiveDate" value="2026-01-01">
+            </label>
+            <label>Plan End Date
+              <input type="date" name="endDate" value="2026-12-31">
+            </label>
+            <label>Premium Amount
+              <input type="number" name="premiumAmount" step="0.01" min="0" value="450.00">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section" id="dependent-section" hidden>
+          <legend>Dependent</legend>
+          <div class="form-grid">
+            <label>Relationship
+              <select name="dependentRelationship">
+                <option value="01">01 - Spouse</option>
+                <option value="19" selected>19 - Child</option>
+                <option value="38">38 - Other or Significant Other</option>
+                <option value="G8">G8 - Other Relationship</option>
+              </select>
+            </label>
+            <label>Dependent First Name
+              <input type="text" name="depFirstName" maxlength="35" value="JANE">
+            </label>
+            <label>Dependent Last Name
+              <input type="text" name="depLastName" maxlength="60" value="DOE">
+            </label>
+            <label>Dependent DOB
+              <input type="date" name="depDateOfBirth" value="2015-06-10">
+            </label>
+            <label>Dependent Gender
+              <select name="depGender">
+                <option value="F" selected>F - Female</option>
+                <option value="M">M - Male</option>
+                <option value="U">U - Unknown</option>
+              </select>
+            </label>
+            <label>Dependent SSN
+              <input type="text" name="depSsn" maxlength="9" value="987654321">
+            </label>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="output-panel">
+      <div class="panel-header">
+        <h2>Generated 834 EDI</h2>
+        <div class="output-tabs" role="tablist">
+          <button class="tab active" data-tab="raw" type="button">Raw EDI</button>
+          <button class="tab" data-tab="formatted" type="button">Pretty</button>
+          <button class="tab" data-tab="explained" type="button">Annotated</button>
+        </div>
+      </div>
+      <div class="output-actions">
+        <button id="btn-generate" class="btn btn-primary" type="button">Generate</button>
+        <button id="btn-copy" class="btn btn-secondary" type="button">Copy</button>
+        <button id="btn-download" class="btn btn-secondary" type="button">Download .edi</button>
+      </div>
+      <div class="output-stats" id="output-stats"></div>
+      <pre id="output-raw" class="output active"></pre>
+      <pre id="output-formatted" class="output"></pre>
+      <div id="output-explained" class="output explained"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/sampleData.js"></script>
+  <script src="js/scenarios.js"></script>
+  <script src="js/ediGenerator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
